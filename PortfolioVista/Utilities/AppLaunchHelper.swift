@@ -1,46 +1,26 @@
 //
-//  PortfolioVistaApp.swift
+//  AppFirstLaunchHelper.swift
 //  PortfolioVista
 //
-//  Created by leetsekun on 9/30/24.
+//  Created by leetsekun on 10/6/24.
 //
 
-import SwiftUI
+import Foundation
 import SwiftData
 
-@main
-struct PortfolioVistaApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Transaction.self,
-            Book.self,
-            Account.self,
-            Category.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-            print("ModelContainer created")
-            if AppLaunchHelper.isFirstLaunch() {
-                print("First launch")
-                let context = container.mainContext
-                insertInitialModelRecords(context: context)
-            }
-            return container
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+struct AppLaunchHelper {
+    private static let launchedBeforeKey = "hasLaunchedBefore"
+    
+    static func isFirstLaunch() -> Bool {
+        let hasLaunchedBefore = UserDefaults.standard.bool(forKey: launchedBeforeKey)
+        if !hasLaunchedBefore {
+            UserDefaults.standard.set(true, forKey: launchedBeforeKey)
+            return true
         }
-    }()
-
-    var body: some Scene {
-        WindowGroup {
-            LandingView()
-        }
-        .modelContainer(sharedModelContainer)
+        return false
     }
 
-    private static func insertInitialModelRecords(context: ModelContext) {
+    static func insertInitialModelRecords(context: ModelContext) {
         let initialCategories = [
             (name: "Food", systemImage: "fork.knife"),
             (name: "Transport", systemImage: "car"),
