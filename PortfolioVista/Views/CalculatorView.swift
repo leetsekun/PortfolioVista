@@ -13,6 +13,7 @@ struct CalculatorView: View {
     @State private var input2: [String] = []
     @State private var prevOp: Operator?
     @State private var isTypingFirstNumber: Bool = true
+    var onAddTransaction: (() -> Void)?
 
     private let numberPadColumns: [[String]] = [
         ["1", "4", "7", "."],
@@ -40,10 +41,12 @@ struct CalculatorView: View {
                                 Image(systemName: "delete.left.fill")
                                     .font(.title2)
                                     .foregroundColor(.black)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                             } else {
                                 Text(symbol)
                                     .font(symbol == "完成" ? .title2.weight(.semibold) : .title)
                                     .foregroundColor(symbol == "完成" ? .white : .black)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: symbol == "完成" ? 118 : 56)
@@ -208,6 +211,7 @@ struct CalculatorView: View {
 
     private func handleEqual() {
         if input2.isEmpty {
+            onAddTransaction?()
             return
         }
         if input2.last == "." {

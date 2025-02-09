@@ -10,59 +10,25 @@ import SwiftData
 
 struct AddTransactionView: View {
     @Binding var isAddTransactionPresented: Bool
-    // @Query private var categories: [Category]
-    let initialCategories = [
-        (name: "Food", systemImage: "fork.knife.circle"),
-        (name: "Transport", systemImage: "car.circle"),
-        (name: "Utilities", systemImage: "lightbulb.circle"),
-        (name: "Entertainment", systemImage: "film.circle"),
-        (name: "Shopping", systemImage: "bag.circle"),
-        (name: "Other", systemImage: "smallcircle.filled.circle")
-    ]
-
-    let secondaryCategories = [
-        (name: "Groceries", systemImage: "cart.circle", parentName: "Food"),
-        (name: "Dining Out", systemImage: "fork.knife.circle", parentName: "Food"),
-        (name: "Public Transport", systemImage: "car.circle", parentName: "Transport"),
-        (name: "Fuel", systemImage: "fuelpump.circle", parentName: "Transport")
-    ]
+    @Query private var categories: [Category]
+    @Query private var books: [Book]
+    @Query private var accounts: [Account]
+    @Environment(\.modelContext) private var modelContext
     
-    @State private var categories: [Category] = []
     @State private var selectedTab = "支出"
     @State private var amount: String = "0.00"
     @State private var note: String = ""
     @State private var selectedCategory: Category? = nil
-    @State private var selectedBook: String = "Book 1"
-    @State private var selectedAccount: String = "Acc1"
+    @State private var selectedBook: Book? = nil
+    @State private var selectedAccount: Account? = nil
     @State private var isBookPickerPresented = false
     @State private var isAccountPickerPresented = false
     @State private var currentInput: String = ""
     @State private var previousInput: String = ""
     @State private var operation: String = ""
-    
-    let books = ["Book 1", "Book 2", "Book 3"]
-    let accounts = ["Acc1", "Acc2", "Acc3"]
 
     init(isAddTransactionPresented: Binding<Bool>) {
         self._isAddTransactionPresented = isAddTransactionPresented
-        var categoryDict = [String: Category]()
-        var categories = [Category]()
-        
-        for categoryData in initialCategories {
-            let category = Category(name: categoryData.name, icon: categoryData.systemImage)
-            categoryDict[categoryData.name] = category
-            categories.append(category)
-        }
-        
-        for categoryData in secondaryCategories {
-            if let parentCategory = categoryDict[categoryData.parentName] {
-                let category = Category(name: categoryData.name, icon: categoryData.systemImage, parent: parentCategory)
-                parentCategory.subcategories.append(category)
-                categories.append(category)
-            }
-        }
-        
-        self._categories = State(initialValue: categories)
     }
 
     var body: some View {
@@ -80,13 +46,13 @@ struct AddTransactionView: View {
                     Button(action: {
                         isBookPickerPresented = true
                     }) {
-                        Text(selectedBook)
+                        Text(selectedBook?.name ?? "选择账本")
                             .foregroundColor(.blue)
                     }
                     .sheet(isPresented: $isBookPickerPresented) {
                         Picker("选择账本", selection: $selectedBook) {
                             ForEach(books, id: \.self) { book in
-                                Text(book).tag(book)
+                                Text(book.name).tag(book as Book?)
                             }
                         }
                         .pickerStyle(WheelPickerStyle())
@@ -135,7 +101,7 @@ struct AddTransactionView: View {
                             HStack(spacing: 2) {
                                 Image(systemName: "message.circle.fill") // Placeholder for WeChat icon
                                     .foregroundColor(.green)
-                                Text(selectedAccount)
+                                Text(selectedAccount?.name ?? "选择账户")
                             }
                             .padding(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                             .background(Color.white)
@@ -145,7 +111,7 @@ struct AddTransactionView: View {
                         .sheet(isPresented: $isAccountPickerPresented) {
                             Picker("选择账户", selection: $selectedAccount) {
                                 ForEach(accounts, id: \.self) { account in
-                                    Text(account).tag(account)
+                                    Text(account.name).tag(account as Account?)
                                 }
                             }
                             .pickerStyle(WheelPickerStyle())
@@ -170,7 +136,7 @@ struct AddTransactionView: View {
                 
                 HStack {
                     Button(action: {
-                        // Action for the button
+                        addTransaction()
                     }) {
                         HStack(spacing: 2) {
                             Image(systemName: "clock")
@@ -193,18 +159,31 @@ struct AddTransactionView: View {
             .monospacedDigit()
 
             // Number Pad
-            CalculatorView(displayText: $amount)
+            CalculatorView(displayText: $amount, onAddTransaction: {
+                addTransaction()
+            })
         }
         .padding(.horizontal)
         .background(Color(.systemGray6))
     }
     
-    private func switchAccount() {
-        // Implement the switch account action
-        if let currentIndex = accounts.firstIndex(of: selectedAccount) {
-            let nextIndex = (currentIndex + 1) % accounts.count
-            selectedAccount = accounts[nextIndex]
+    private func addTransaction() {
+        guard let selectedCategory = selectedCategory,
+              let selectedBook = selectedBook,
+              let selectedAccount = selectedAccount,
+              let amountValue = Decimal(string: amount) else { return }
+        
+        let transactionType: TransactionType = selectedTab == "支出" ? .expense : .income
+        
+        let newTransaction = Transaction(datetime: Date(), amount: amountValue, currency: selectedAccount.currency, type: transactionType, category: selectedCategory, book: selectedBook, account: selectedAccount, notes: note)
+        modelContext.insert(newTransaction)
+        do {
+            try modelContext.save()
+            print("Transaction saved successfully.")
+        } catch {
+            print("Error saving data: \(error)")
         }
+        isAddTransactionPresented = false
     }
 }
 
