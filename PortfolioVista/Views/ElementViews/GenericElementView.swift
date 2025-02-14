@@ -22,7 +22,7 @@ struct GenericElementView<Content1: View, Content2: View>: View {
             
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.callout)
+                    .font(.system(size: 14, weight: .regular))
                     .bold()
                 content1
             }
@@ -32,5 +32,6 @@ struct GenericElementView<Content1: View, Content2: View>: View {
             content2
             .layoutPriority(1)
         }
+        .lineLimit(1)
     }
 }

@@ -47,4 +47,3 @@ struct TransactionView: View {
     )
     return TransactionView(transaction: exampleTransaction)
 }
-

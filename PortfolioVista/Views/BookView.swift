@@ -9,20 +9,23 @@ import SwiftUI
 import SwiftData
 
 struct BookView: View {
-    @Query private var transactions: [Transaction]
-    @Query private var books: [Book]
+    @Query private var queryTransactions: [Transaction]
+    @Query private var queryBooks: [Book]
     @State private var selectedBook: Book?
     @State private var searchText = ""
     @State private var isTitleVisible = false
     @State private var isAddTransactionPresented = false
 
-    var filteredTransactions: [Transaction] {
-        transactions.filter { transaction in
-            (selectedBook == nil || transaction.book == selectedBook) &&
-            (searchText.isEmpty || transaction.category?.name.localizedCaseInsensitiveContains(searchText) == true ||
-            transaction.notes?.localizedCaseInsensitiveContains(searchText) == true)
-        }
-        .sorted { $0.datetime > $1.datetime } // Sort by datetime, latest first
+    // preview control
+    var previewTransactions: [Transaction]?
+    var previewBooks: [Book]?
+    var isPreview: Bool = false
+
+    private var transactions: [Transaction] {
+        isPreview ? previewTransactions! : queryTransactions
+    }
+    private var books: [Book] {
+        isPreview ? previewBooks! : queryBooks
     }
     
     var body: some View {
@@ -98,39 +101,7 @@ struct BookView: View {
                             .padding(.trailing)
                         }
 
-                        VStack {
-                            // Main Card View for Total Balance
-                            VStack(alignment: .leading) {
-                                HStack(spacing: 4) {
-                                    Text("总支出").font(.headline)
-                                    Image(systemName: "arrow.left.arrow.right").font(.caption)
-                                    Spacer()
-                                }
-                                .foregroundColor(.red)
-                                .fontWeight(.bold)
-                                Text("$6,892.63")
-                                    .font(.system(size: 40, weight: .medium))
-                                    .fontWidth(.compressed)
-                                    .monospacedDigit()
-                                    .foregroundColor(.black)
-                                    .padding(.bottom, 16)
-                                HStack {
-                                    Text("总收入 ").fontWeight(.semibold)
-                                     + Text("$11,122.07").foregroundColor(Color(white: 0.3))
-                                    Spacer().frame(width: 16)
-                                    Text("月结余 ").fontWeight(.semibold)
-                                     + Text("$4,229.44").foregroundColor(Color(white: 0.3))
-                                }
-                                .grayTextStyle(font: .callout)
-                                .monospacedDigit()
-                            }
-                            .padding()
-                            .background(Color.white)
-                            .cornerRadius(Constants.cornerRadius)
-
-                            // Transaction List
-                            TransactionGroupView(txns: filteredTransactions)
-                        }
+                        TransactionGroupView(selectedBook: selectedBook, searchText: searchText)
                     }
                 }
             }
@@ -166,5 +137,5 @@ struct BookView: View {
 }
 
 #Preview {
-    BookView()
+    BookView(previewTransactions: PreviewHelper.sampleTransactions(), previewBooks: PreviewHelper.sampleBooks(), isPreview: true)
 }
