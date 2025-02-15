@@ -158,6 +158,11 @@ struct CalculatorView: View {
     }
 
     private func handleOperatorInput(_ symbol: String) {
+        // if there's not yet any input, ignore it
+        if input1.isEmpty {
+            return
+        }
+
         let op: Operator = symbol == "+  ×" ? .addition : .subtraction
         
         // if the last character from displayText is an operator, we only need to update the prevOp
