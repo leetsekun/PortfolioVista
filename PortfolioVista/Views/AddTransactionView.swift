@@ -26,11 +26,22 @@ struct AddTransactionView: View {
     @State private var currentInput: String = ""
     @State private var previousInput: String = ""
     @State private var operation: String = ""
-
+    
+    // save transaction time
+    @State private var selectedHour: Int = 0  // Default hour
+    @State private var selectedMinute: Int = 0 // Default minute
+    let hours = Array(0...23)
+    let minutes = Array(0...59)
+    // Stores valid Date object
+    @State private var selectedTime: Date?
+    
+    @State private var selectedDate: Date = Date()
+    @State private var showDatePicker: Bool = false
+    
     init(isAddTransactionPresented: Binding<Bool>) {
         self._isAddTransactionPresented = isAddTransactionPresented
     }
-
+    
     var body: some View {
         VStack {
             // Top Navigation Bar
@@ -40,9 +51,9 @@ struct AddTransactionView: View {
                         isAddTransactionPresented = false
                     }
                     .foregroundColor(.gray)
-
+                    
                     Spacer()
-
+                    
                     Button(action: {
                         isBookPickerPresented = true
                     }) {
@@ -60,7 +71,7 @@ struct AddTransactionView: View {
                     .frame(maxWidth: 100, alignment: .trailing) // Align to the right
                 }
                 .font(.callout)
-
+                
                 Picker("Category", selection: $selectedTab) {
                     Text("支出").tag("支出")
                     Text("收入").tag("收入")
@@ -133,21 +144,52 @@ struct AddTransactionView: View {
                 .fontWidth(.compressed)
                 
                 Divider()
-                
-                HStack {
-                    Button(action: {
-                        addTransaction()
-                    }) {
-                        HStack(spacing: 2) {
-                            Image(systemName: "clock")
-                            Text("00:41")
+                VStack {
+                    HStack {
+                        Button("日期") {
+                            showDatePicker.toggle()
                         }
-                        .foregroundColor(.black)
-                        .padding(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-                        .background(Color(.systemGray6))
-                        .cornerRadius(Constants.cornerRadius)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        
+                        Text("日期: \(selectedDate, formatter: dateFormatter)")
+                            .padding()
                     }
-
+                    .sheet(isPresented: $showDatePicker) {
+                        DatePicker("选择日期", selection: $selectedDate, displayedComponents: .date)
+                            .datePickerStyle(GraphicalDatePickerStyle())
+                            .padding()
+                    }
+                    
+                    HStack {
+                        Text("时间")
+                        
+                        Button(action: {
+                            addTransaction()
+                        }) {
+                            // Hour Picker
+                            Picker("Hour", selection: $selectedHour) {
+                                ForEach(hours, id: \.self) { hour in
+                                    Text(String(format: "%02d", hour)).tag(hour)
+                                }
+                            }
+                            .pickerStyle(WheelPickerStyle()) // Wheel-style selection
+                            .frame(width: 60, height: 40) // Adjust size
+                            
+                            Text(":") // Separator
+                            
+                            // Minute Picker
+                            Picker("Minute", selection: $selectedMinute) {
+                                ForEach(minutes, id: \.self) { minute in
+                                    Text(String(format: "%02d", minute)).tag(minute)
+                                }
+                            }
+                            .pickerStyle(WheelPickerStyle())
+                            .frame(width: 60, height: 40) // Adjust size
+                        }
+                    }
                     TextField("点击填写备注", text: $note)
                 }
                 .grayTextStyle(font: .callout)
@@ -157,7 +199,7 @@ struct AddTransactionView: View {
             .background(Color.white)
             .cornerRadius(Constants.cornerRadius)
             .monospacedDigit()
-
+            
             // Number Pad
             CalculatorView(displayText: $amount, onAddTransaction: {
                 addTransaction()
@@ -175,7 +217,7 @@ struct AddTransactionView: View {
         
         let transactionType: TransactionType = selectedTab == "支出" ? .expense : .income
         
-        let newTransaction = Transaction(datetime: Date(), amount: amountValue, currency: selectedAccount.currency, type: transactionType, category: selectedCategory, book: selectedBook, account: selectedAccount, notes: note)
+        let newTransaction = Transaction(datetime: convertToDate(hour: selectedHour, minute: selectedMinute), amount: amountValue, currency: selectedAccount.currency, type: transactionType, category: selectedCategory, book: selectedBook, account: selectedAccount, notes: note)
         modelContext.insert(newTransaction)
         do {
             try modelContext.save()
@@ -184,6 +226,18 @@ struct AddTransactionView: View {
             print("Error saving data: \(error)")
         }
         isAddTransactionPresented = false
+    }
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long // (sample: "February 21, 2025"）
+        return formatter
+    }
+    // Function to create Date object from selected hour & minute
+    private func convertToDate(hour: Int, minute: Int) -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: selectedDate) ?? now
     }
 }
 
