@@ -35,6 +35,9 @@ struct AddTransactionView: View {
     // Stores valid Date object
     @State private var selectedTime: Date?
     
+    @State private var selectedDate: Date = Date()
+    @State private var showDatePicker: Bool = false
+    
     init(isAddTransactionPresented: Binding<Bool>) {
         self._isAddTransactionPresented = isAddTransactionPresented
     }
@@ -141,32 +144,52 @@ struct AddTransactionView: View {
                 .fontWidth(.compressed)
                 
                 Divider()
-                
-                HStack {
-                    Button(action: {
-                        addTransaction()
-                    }) {
-                        // Hour Picker
-                        Picker("Hour", selection: $selectedHour) {
-                            ForEach(hours, id: \.self) { hour in
-                                Text(String(format: "%02d", hour)).tag(hour)
-                            }
+                VStack {
+                    HStack {
+                        Button("日期") {
+                            showDatePicker.toggle()
                         }
-                        .pickerStyle(WheelPickerStyle()) // Wheel-style selection
-                        .frame(width: 80, height: 80) // Adjust size
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
                         
-                        Text(":") // Separator
-                        
-                        // Minute Picker
-                        Picker("Minute", selection: $selectedMinute) {
-                            ForEach(minutes, id: \.self) { minute in
-                                Text(String(format: "%02d", minute)).tag(minute)
-                            }
-                        }
-                        .pickerStyle(WheelPickerStyle())
-                        .frame(width: 80, height: 80) // Adjust size
+                        Text("日期: \(selectedDate, formatter: dateFormatter)")
+                            .padding()
+                    }
+                    .sheet(isPresented: $showDatePicker) {
+                        DatePicker("选择日期", selection: $selectedDate, displayedComponents: .date)
+                            .datePickerStyle(GraphicalDatePickerStyle())
+                            .padding()
                     }
                     
+                    HStack {
+                        Text("时间")
+                        
+                        Button(action: {
+                            addTransaction()
+                        }) {
+                            // Hour Picker
+                            Picker("Hour", selection: $selectedHour) {
+                                ForEach(hours, id: \.self) { hour in
+                                    Text(String(format: "%02d", hour)).tag(hour)
+                                }
+                            }
+                            .pickerStyle(WheelPickerStyle()) // Wheel-style selection
+                            .frame(width: 60, height: 40) // Adjust size
+                            
+                            Text(":") // Separator
+                            
+                            // Minute Picker
+                            Picker("Minute", selection: $selectedMinute) {
+                                ForEach(minutes, id: \.self) { minute in
+                                    Text(String(format: "%02d", minute)).tag(minute)
+                                }
+                            }
+                            .pickerStyle(WheelPickerStyle())
+                            .frame(width: 60, height: 40) // Adjust size
+                        }
+                    }
                     TextField("点击填写备注", text: $note)
                 }
                 .grayTextStyle(font: .callout)
@@ -205,11 +228,16 @@ struct AddTransactionView: View {
         isAddTransactionPresented = false
     }
     
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .long // (sample: "February 21, 2025"）
+        return formatter
+    }
     // Function to create Date object from selected hour & minute
     private func convertToDate(hour: Int, minute: Int) -> Date {
         let calendar = Calendar.current
         let now = Date()
-        return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now) ?? now
+        return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: selectedDate) ?? now
     }
 }
 
