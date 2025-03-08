@@ -18,6 +18,9 @@ struct TransactionGroupView: View {
     var previewTxns: [Transaction]?
     var isPreview: Bool = false
 
+    @Namespace var titleNamespace
+    @State private var selectedTransaction: Transaction?
+
     private var txns: [Transaction] {
         isPreview ? previewTxns! : queryTxns
     }
@@ -70,7 +73,7 @@ struct TransactionGroupView: View {
             .background(Color.white)
             .cornerRadius(Constants.cornerRadius)
 
-            ForEach(groupedTxns.keys.sorted(), id: \.self) { date in
+            ForEach(groupedTxns.keys.sorted(by: >), id: \.self) { date in
                 LazyVStack(alignment: .leading) {
                     GenericDisclosureGroup(
                         leftLabel: date,
@@ -78,10 +81,19 @@ struct TransactionGroupView: View {
                         elements: groupedTxns[date]!,
                         content: { txn in
                             TransactionView(transaction: txn)
+                                .onTapGesture {
+                                    withAnimation {
+                                        selectedTransaction = txn
+                                    }
+                                }
                         }
                     )
                 }
             }
+        }
+        .fullScreenCover(item: $selectedTransaction) { txn in
+            TransactionDetailView(txn: txn)
+                .transition(.move(edge: .trailing))
         }
     }
 

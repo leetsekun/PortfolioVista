@@ -15,6 +15,7 @@ struct BookView: View {
     @State private var searchText = ""
     @State private var isTitleVisible = false
     @State private var isAddTransactionPresented = false
+    @Namespace private var titleNamespace
 
     // preview control
     var previewTransactions: [Transaction]?
@@ -46,13 +47,12 @@ struct BookView: View {
                     }
                     
                     Spacer()
-                    
                     if isTitleVisible {
                         Text(selectedBook?.name ?? "All")
                             .font(.title3)
                             .padding(.horizontal)
+                            .matchedGeometryEffect(id: "title", in: titleNamespace)
                     }
-                    
                     Spacer()
                     
                     Button(action: {
@@ -69,6 +69,7 @@ struct BookView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(selectedBook?.name ?? "All")
                             .font(.system(.largeTitle).weight(.bold))
+                            .matchedGeometryEffect(id: "title", in: titleNamespace)
                             .onScrollVisibilityChange(threshold: 0.1) { isVisible in
                                 isTitleVisible = !isVisible
                             }
